@@ -1,0 +1,113 @@
+{
+  "id": "67bde2707d0ef82ec7be7657",
+  "collectionId": "sports_affinity_coll",
+  "realm": "XSTREAM",
+  "type": "HYBRID",
+  "status": "PUBLISHED",
+  "languages": [
+    "all"
+  ],
+  "regions": null,
+  "title": "sports affinity",
+  "subtitle": "",
+  "description": "",
+  "isImmersive": null,
+  "owner": null,
+  "promoterDeeplink": null,
+  "logoUrl": null,
+  "videoUrl": null,
+  "cps": null,
+  "contentTypes": [
+    "COLLECTION"
+  ],
+  "extra": null,
+  "contents": [
+    {
+      "contentId": "SONYLIV_VOD_TVSHOW_1700000725",
+      "position": 1,
+      "type": "TVSHOW"
+    },
+    {
+      "contentId": "LIONSGATEPLAY_MOVIE_PUNCTUREY2011M",
+      "position": 2,
+      "type": "MOVIE"
+    },
+    {
+      "contentId": "LIONSGATEPLAY_MOVIE_12STRONG0Y2018M",
+      "position": 3,
+      "type": "MOVIE"
+    },
+    {
+      "contentId": "LIONSGATEPLAY_MOVIE_LATENIGHTWITHTHEDEVILY2024M",
+      "position": 4,
+      "type": "MOVIE"
+    },
+    {
+      "contentId": "LIONSGATEPLAY_MOVIE_FREELANCEY2023M",
+      "position": 5,
+      "type": "MOVIE"
+    },
+    {
+      "contentId": "SONYLIV_VOD_TVSHOW_1700000084",
+      "position": 6,
+      "type": "TVSHOW"
+    },
+    {
+      "contentId": "LIONSGATEPLAY_MOVIE_SLEEPINGDOGSY2024M",
+      "position": 7,
+      "type": "MOVIE"
+    },
+    {
+      "contentId": "LIONSGATEPLAY_MOVIE_THERITUALY2025M",
+      "position": 8,
+      "type": "MOVIE"
+    },
+    {
+      "contentId": "LIONSGATEPLAY_MOVIE_RAMBOY2019M",
+      "position": 9,
+      "type": "MOVIE"
+    },
+    {
+      "contentId": "SONYLIV_VOD_MOVIE_1090477084",
+      "position": 10,
+      "type": "MOVIE"
+    }
+  ],
+  "sortStrategy": "manual",
+  "dynamicMeta": {
+    "functionName": null,
+    "useCase": null,
+    "isFollowable": false,
+    "refreshType": "ALWAYS",
+    "protocol": null,
+    "mixParam": {
+      "sourceStrategy": null,
+      "useCase": null,
+      "sortStrategy": null,
+      "filterStrategy": null,
+      "mixOperator": null,
+      "itemPerMix": 0,
+      "minItemPerMix": 0,
+      "mixCount": 0,
+      "multiSourceRequest": null,
+      "postProcessing": {
+        "enableDeduplication": true
+
+      },
+      "noir": {
+        "strategy": [ ]
+      },
+      "params": {}
+    },
+    "functionType": "EXTERNAL_DTO",
+    "url": "http://multisource-collection.discovery.svc.cluster.local:8080/v1/content?deviceType=PHONE&_disablePostProcessing=true&uid=p-cWmUEqg4MGRdaJp&os=ANDROID&languages=hi%2Cen&appKey=SDK&realm=XSTREAM&id=axhyb_t2xi77811739265745036&buildNo=15000&artistId",
+    "collectionId": null
+  },
+  "cacheTime": 0,
+  "artworks": {},
+  "mTags": null,
+  "tags": [],
+  "xFilters": null,
+  "xAppKey": null,
+  "xPageLink": null
+}
