@@ -6,6 +6,8 @@ import io.restassured.http.Headers;
 import io.restassured.response.Response;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class BaseServiceClient extends ApiHelper {
@@ -15,6 +17,7 @@ public class BaseServiceClient extends ApiHelper {
                 .queryParams(param)
                 .get(endPoint);
     }
+
 
     protected static Response get(Map<String, String> param, String endPoint) {
         return baseApiUrl("baseApiUrl")
@@ -73,6 +76,16 @@ public class BaseServiceClient extends ApiHelper {
                 .queryParams(param)
                 .get(endPoint);
     }
+
+
+
+    protected static Response get(String baseUrl, Map<String, String> param, String endPoint, List<Header> headers) {
+
+        return baseApiUrl(baseUrl,new Headers(headers))
+                .queryParams(param)
+                .get(endPoint);
+    }
+
 
     protected static Response get(Map<String, String> param, String endPoint, Headers headers) {
         return baseApiUrl("baseApiUrl",headers)

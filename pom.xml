@@ -7,7 +7,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>net.serenitybdd.starter</groupId>
-    <artifactId>cucumber-starter</artifactId>
+    <artifactId>clm-be-automation</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 
     <properties>
