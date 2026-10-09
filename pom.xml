@@ -181,7 +181,7 @@
 
                 <configuration>
                     <outputDirectory>
-                        ${project.basedir}/output/serenity-reports-st
+                        ${project.basedir}/output/serenity-reports-${maven.build.timestamp}
                     </outputDirectory>
                 </configuration>
 

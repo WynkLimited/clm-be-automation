@@ -1,79 +1,89 @@
 package stepDefinition.api;
 
-import io.cucumber.java.en.Then;
+import factory.CreateAudiencePayloadFactory;
 import io.cucumber.java.en.When;
 import io.restassured.response.Response;
+import model.request.clm.CreateAudienceRequest;
 import model.response.clm.partner.PartnerInfoItem;
 import model.response.clm.partner.PartnerInfoResponse;
+import model.response.clm.tag.TagCatalogItem;
+import model.response.clm.tag.TagCatalogResponse;
 import net.serenitybdd.annotations.Steps;
 import net.serenitybdd.core.Serenity;
-import org.junit.Assert;
+import org.apache.commons.lang3.ObjectUtils;
 import services.clm.AudienceManagerService;
+import utilities.BaseAssertion;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static helpers.ApiHelper.parseResponse;
+import static helpers.ApiHelper.parseToJson;
+import static net.serenitybdd.core.Serenity.*;
 
-
-public class AudienceManager {
+public class AudienceManager extends BaseAssertion {
 
     @Steps
     AudienceManagerService audienceService;
 
     private PartnerInfoResponse partnerInfo;
+    private List<String> audienceTags;
+    private Response createAudienceResponse;
+    private CreateAudienceRequest createAudienceRequest;
 
-    @When("Hit audience manager info API")
-    public void hitAudienceManagerInfoApi() {
-        Response partnerInfoResponse = audienceService.getPartnerInfo();
+    @When("Hit audience manager info API and validate response has partners")
+    public void hitAudienceManagerInfoApiAndValidateResponseHasPartners() {
+        Response partnerInfoResponse = audienceService.getPartnerInfo(true);
         Serenity.recordReportData().withTitle("Partner info response")
                 .andContents(partnerInfoResponse.asString());
 
-        Assert.assertEquals(
-                "Partner info API failed. body=" + partnerInfoResponse.asString(),
-                200,
-                partnerInfoResponse.getStatusCode()
-        );
-
         partnerInfo = parseResponse(partnerInfoResponse, PartnerInfoResponse.class);
-        Assert.assertNotNull("Partner info response data is null", partnerInfo.getData());
-        Assert.assertNotNull("partnerInfo list is null", partnerInfo.getData().getPartnerInfo());
-        Assert.assertFalse("partnerInfo list is empty", partnerInfo.getData().getPartnerInfo().isEmpty());
-
-        String ids = partnerInfo.getData().getPartnerInfo().stream()
-                .map(item -> item.getPartnerKey() + "=" + item.getId())
-                .collect(Collectors.joining(", "));
-        Serenity.recordReportData().withTitle("Partner IDs from info API").andContents(ids);
+        assertFalse(ObjectUtils.isEmpty(partnerInfo.getData()), "Partner info data is null/empty");
+        assertFalse(ObjectUtils.isEmpty(partnerInfo.getData().getPartnerInfo()), "partnerInfo list is null/empty");
     }
 
-    @Then("Validate audience manager info response has partners")
-    public void validateAudienceManagerInfoResponseHasPartners() {
-        Assert.assertNotNull("Hit partner info API first", partnerInfo);
-        List<PartnerInfoItem> partners = partnerInfo.getData().getPartnerInfo();
+    @When("Hit tag catalog API and fetch audience tags")
+    public void hitTagCatalogApiAndFetchAudienceTags() {
+        Response tagCatalogResponse = audienceService.getTagCatalog(true);
+        Serenity.recordReportData().withTitle("Tag catalog response")
+                .andContents(tagCatalogResponse.asString());
 
-        for (PartnerInfoItem partner : partners) {
-            Assert.assertNotNull("partner id is null for " + partner.getPartnerKey(), partner.getId());
-            Assert.assertFalse("partner id is blank for " + partner.getPartnerKey(), partner.getId().isBlank());
-            Assert.assertNotNull("partnerKey is null", partner.getPartnerKey());
-            Assert.assertFalse("partnerKey is blank", partner.getPartnerKey().isBlank());
-            Assert.assertNotNull("displayName is null for " + partner.getPartnerKey(), partner.getDisplayName());
-            Assert.assertNotNull("deliveryMechanism is null for " + partner.getPartnerKey(), partner.getDeliveryMechanism());
-            Assert.assertFalse("deliveryMechanism is empty for " + partner.getPartnerKey(),
-                    partner.getDeliveryMechanism().isEmpty());
-        }
+        TagCatalogResponse tagCatalog = parseResponse(tagCatalogResponse, TagCatalogResponse.class);
+        assertFalse(ObjectUtils.isEmpty(tagCatalog.getData()), "Tag catalog data is null/empty");
+        assertFalse(ObjectUtils.isEmpty(tagCatalog.getData().getTags()), "Tag catalog tags list is null/empty");
+
+        audienceTags = tagCatalog.getData().getTags().stream()
+                .map(TagCatalogItem::getKey)
+                .filter(key -> key != null && !key.isBlank())
+                .limit(2)
+                .collect(Collectors.toList());
+
+        assertFalse(ObjectUtils.isEmpty(audienceTags), "No valid tags found in tag catalog");
+        Serenity.recordReportData().withTitle("Tags selected for create audience")
+                .andContents(audienceTags.toString());
     }
 
-    @Then("Validate audience manager info contains partner key {string}")
-    public void validateAudienceManagerInfoContainsPartnerKey(String partnerKey) {
-        Assert.assertNotNull("Hit partner info API first", partnerInfo);
-        boolean found = partnerInfo.getData().getPartnerInfo().stream()
-                .anyMatch(item -> partnerKey.equalsIgnoreCase(item.getPartnerKey()));
-        Assert.assertTrue(
-                "Expected partnerKey=" + partnerKey + " in response. Actual="
-                        + partnerInfo.getData().getPartnerInfo().stream()
-                        .map(PartnerInfoItem::getPartnerKey)
-                        .collect(Collectors.toList()),
-                found
-        );
+    @When("Create audience with partner key {string} and validate audience is created successfully")
+    public void createAudienceWithPartnerKeyAndValidate(String partnerKey) {
+        PartnerInfoItem sourcePartner = partnerInfo.getData().getPartnerInfo().stream()
+                .filter(item -> partnerKey.equalsIgnoreCase(item.getPartnerKey()))
+                .findFirst()
+                .orElse(null);
+
+        assertNotNull(sourcePartner, "Partner key not found in partner info: " + partnerKey);
+
+        createAudienceRequest = CreateAudiencePayloadFactory.buildRequest(sourcePartner, audienceTags);
+        String requestBody = parseToJson(createAudienceRequest);
+        Map<String, String> query = CreateAudiencePayloadFactory.saveQueryParams();
+
+        Serenity.recordReportData().withTitle("Create audience request").andContents(requestBody);
+        Serenity.recordReportData().withTitle("Partner object id used")
+                .andContents(partnerKey + "=" + sourcePartner.getId());
+
+        createAudienceResponse = audienceService.createAudience(requestBody, query, true);
+        Serenity.recordReportData().withTitle("Create audience response")
+                .andContents(createAudienceResponse.asString());
+        assertResponseContains(createAudienceResponse, createAudienceRequest.getName());
     }
 }

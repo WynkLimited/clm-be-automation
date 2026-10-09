@@ -1,26 +1,33 @@
 package services.clm;
 
+import io.restassured.http.ContentType;
 import io.restassured.http.Header;
-import io.restassured.http.Headers;
 import io.restassured.response.Response;
 import stepDefinition.api.ApiEndpoints;
 import utilities.BaseServiceClient;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
-public class AudienceManagerService  extends BaseServiceClient  implements ApiEndpoints{
+public class AudienceManagerService extends BaseServiceClient implements ApiEndpoints {
 
-
-
-    private Headers partnerHeaders() {
-        return new Headers(
-                new Header("Authorization", "Bearer " + getCollectionUrls("uclmAuth")),
-                new Header("Accept", "application/json"),
-                new Header("Content-Type", "application/json")
-        );
+    private List<Header> authHeaders() {
+        return Arrays.asList(new Header("Authorization", "Bearer " + getCollectionUrls("uclmAuth")));
     }
 
-    public Response getPartnerInfo() {
-        return get("", null, PARTNER_INFO_ENDPOINT, partnerHeaders());
+    public Response getPartnerInfo(boolean checkStatus) {
+        return get(BASE_URL, null, PARTNER_INFO_ENDPOINT, authHeaders(), ContentType.JSON, checkStatus);
+    }
+
+    public Response getTagCatalog(boolean checkStatus) {
+        Map<String, String> query = Map.of("scope", "AUDIENCE_CATALOG");
+        return get(BASE_URL, query, TAG_CATALOG_LIST_ENDPOINT, authHeaders(), ContentType.JSON, checkStatus);
+    }
+
+    public Response createAudience(String body, Map<String, String> queryParams, boolean checkStatus) {
+        Response response = patch(BASE_URL, queryParams, authHeaders(), body, ContentType.JSON, AUDIENCE_SAVE_ENDPOINT, checkStatus);
+        System.out.println("response: " + response.getBody().asString());
+        return response;
     }
 }

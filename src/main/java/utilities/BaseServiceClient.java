@@ -87,9 +87,14 @@ public class BaseServiceClient extends ApiHelper {
     }
 
 
+    protected static Response get( String endPoint, Headers headers) {
+        return baseApiUrl("baseApiUrl",headers)
+               .get(endPoint);
+    }
+
     protected static Response get(Map<String, String> param, String endPoint, Headers headers) {
         return baseApiUrl("baseApiUrl",headers)
-                .queryParams(param)
+                .queryParams(param.isEmpty() ? null : param)
                 .get(endPoint);
     }
 
@@ -139,7 +144,19 @@ public class BaseServiceClient extends ApiHelper {
                 .put(endPoint);
     }
 
+    protected static Response patch(Map<String, String> param, String body, String endPoint, Headers headers) {
+        return baseApiUrl("baseApiUrl", headers)
+                .queryParams(param)
+                .body(body)
+                .patch(endPoint);
+    }
+
     public static String getEnv() {
         return ApiHelper.getEnv();
     }
+
+
+
 }
+
+

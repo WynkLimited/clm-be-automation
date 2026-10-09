@@ -1,12 +1,8 @@
 Feature: CLM Audience Manager Info API
-  Validate audience-admin partner info endpoint.
+  Validate audience-admin partner info and create audience APIs.
 
-
-@clm
-  Scenario : Get partner info and validate partner list
-    When Hit audience manager info API
-    Then Validate audience manager info response has partners
-    And Validate audience manager info contains partner key "CLM_PULL"
-    And Validate audience manager info contains partner key "CLM_PUSH"
-
-
+  @clm
+  Scenario: Create audience with CLM_PULL partner from partner info
+    When Hit audience manager info API and validate response has partners
+    When Hit tag catalog API and fetch audience tags
+    When Create audience with partner key "CLM_PULL" and validate audience is created successfully
