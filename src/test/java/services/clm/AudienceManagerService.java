@@ -1,8 +1,10 @@
 package services.clm;
 
+import constants.TokenConstants;
 import io.restassured.http.ContentType;
 import io.restassured.http.Header;
 import io.restassured.response.Response;
+import net.serenitybdd.core.Serenity;
 import stepDefinition.api.ApiEndpoints;
 import utilities.BaseServiceClient;
 
@@ -13,7 +15,12 @@ import java.util.Map;
 public class AudienceManagerService extends BaseServiceClient implements ApiEndpoints {
 
     private List<Header> authHeaders() {
-        return Arrays.asList(new Header("Authorization", "Bearer " + getCollectionUrls("uclmAuth")));
+        String token = Serenity.sessionVariableCalled(TokenConstants.AUTH_TOKEN_SESSION_KEY);
+        if (token == null || token.isBlank()) {
+            throw new IllegalStateException(
+                    "JWT auth token not found in session. Run 'Generate JWT auth token for CLM APIs' first.");
+        }
+        return Arrays.asList(new Header("Authorization", "Bearer " + token));
     }
 
     public Response getPartnerInfo(boolean checkStatus) {

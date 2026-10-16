@@ -1,6 +1,7 @@
 package stepDefinition.api;
 
 import factory.CreateAudiencePayloadFactory;
+import io.cucumber.java.en.Given;
 import io.cucumber.java.en.When;
 import io.restassured.response.Response;
 import model.request.clm.CreateAudienceRequest;
@@ -11,8 +12,10 @@ import model.response.clm.tag.TagCatalogResponse;
 import net.serenitybdd.annotations.Steps;
 import net.serenitybdd.core.Serenity;
 import org.apache.commons.lang3.ObjectUtils;
+import constants.TokenConstants;
 import services.clm.AudienceManagerService;
 import utilities.BaseAssertion;
+import utilities.JwtTokenUtil;
 
 import java.util.List;
 import java.util.Map;
@@ -31,6 +34,15 @@ public class AudienceManager extends BaseAssertion {
     private List<String> audienceTags;
     private Response createAudienceResponse;
     private CreateAudienceRequest createAudienceRequest;
+
+    @Given("Generate JWT auth token for CLM APIs")
+    public void generateJwtAuthTokenForClmApis() {
+        String token = JwtTokenUtil.createToken();
+        assertFalse(ObjectUtils.isEmpty(token), "Generated JWT token is null/empty");
+        Serenity.setSessionVariable(TokenConstants.AUTH_TOKEN_SESSION_KEY).to(token);
+        Serenity.recordReportData().withTitle("JWT auth token generated")
+                .andContents("Token created successfully for CLM API calls");
+    }
 
     @When("Hit audience manager info API and validate response has partners")
     public void hitAudienceManagerInfoApiAndValidateResponseHasPartners() {
