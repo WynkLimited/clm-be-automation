@@ -1,5 +1,6 @@
 package factory;
 
+import com.airtel.helper.data.JsonParser;
 import model.request.clm.CreateAudiencePartnerInfo;
 import model.request.clm.CreateAudienceRequest;
 import model.response.clm.partner.DeliveryMechanismConfig;
@@ -10,9 +11,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static helpers.ApiHelper.parseToJson;
-
 public final class CreateAudiencePayloadFactory {
+
+    private static final JsonParser JSON_PARSER = new JsonParser();
 
     private CreateAudiencePayloadFactory() {
     }
@@ -21,7 +22,7 @@ public final class CreateAudiencePayloadFactory {
      * Builds create-audience JSON body from partner info + tags.
      */
     public static String buildRequestBody(PartnerInfoItem sourcePartner, List<String> tags) {
-        return parseToJson(buildRequest(sourcePartner, tags));
+        return JSON_PARSER.convertToJson(buildRequest(sourcePartner, tags));
     }
 
     public static CreateAudienceRequest buildRequest(PartnerInfoItem sourcePartner, List<String> tags) {

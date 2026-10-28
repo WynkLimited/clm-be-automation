@@ -9,3 +9,4 @@ Feature: CLM Audience Manager Info API
     When Hit audience manager info API and validate response has partners
     When Hit tag catalog API and fetch audience tags
     When Create audience with partner key "CLM_PULL" and validate audience is created successfully
+    Then Validate created audience exists in Mongo

@@ -1,7 +1,10 @@
 package stepDefinition.api;
 
+import com.airtel.helper.data.JsonParser;
+import constants.TokenConstants;
 import factory.CreateAudiencePayloadFactory;
 import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.restassured.response.Response;
 import model.request.clm.CreateAudienceRequest;
@@ -12,7 +15,7 @@ import model.response.clm.tag.TagCatalogResponse;
 import net.serenitybdd.annotations.Steps;
 import net.serenitybdd.core.Serenity;
 import org.apache.commons.lang3.ObjectUtils;
-import constants.TokenConstants;
+import org.bson.Document;
 import services.clm.AudienceManagerService;
 import utilities.BaseAssertion;
 import utilities.JwtTokenUtil;
@@ -21,11 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static helpers.ApiHelper.parseResponse;
-import static helpers.ApiHelper.parseToJson;
-import static net.serenitybdd.core.Serenity.*;
-
 public class AudienceManager extends BaseAssertion {
+
+    private final JsonParser jsonParser = new JsonParser();
 
     @Steps
     AudienceManagerService audienceService;
@@ -50,7 +51,7 @@ public class AudienceManager extends BaseAssertion {
         Serenity.recordReportData().withTitle("Partner info response")
                 .andContents(partnerInfoResponse.asString());
 
-        partnerInfo = parseResponse(partnerInfoResponse, PartnerInfoResponse.class);
+        partnerInfo = jsonParser.convertFromJson(partnerInfoResponse.asString(), PartnerInfoResponse.class);
         assertFalse(ObjectUtils.isEmpty(partnerInfo.getData()), "Partner info data is null/empty");
         assertFalse(ObjectUtils.isEmpty(partnerInfo.getData().getPartnerInfo()), "partnerInfo list is null/empty");
     }
@@ -61,7 +62,7 @@ public class AudienceManager extends BaseAssertion {
         Serenity.recordReportData().withTitle("Tag catalog response")
                 .andContents(tagCatalogResponse.asString());
 
-        TagCatalogResponse tagCatalog = parseResponse(tagCatalogResponse, TagCatalogResponse.class);
+        TagCatalogResponse tagCatalog = jsonParser.convertFromJson(tagCatalogResponse.asString(), TagCatalogResponse.class);
         assertFalse(ObjectUtils.isEmpty(tagCatalog.getData()), "Tag catalog data is null/empty");
         assertFalse(ObjectUtils.isEmpty(tagCatalog.getData().getTags()), "Tag catalog tags list is null/empty");
 
@@ -86,7 +87,7 @@ public class AudienceManager extends BaseAssertion {
         assertNotNull(sourcePartner, "Partner key not found in partner info: " + partnerKey);
 
         createAudienceRequest = CreateAudiencePayloadFactory.buildRequest(sourcePartner, audienceTags);
-        String requestBody = parseToJson(createAudienceRequest);
+        String requestBody = jsonParser.convertToJson(createAudienceRequest);
         Map<String, String> query = CreateAudiencePayloadFactory.saveQueryParams();
 
         Serenity.recordReportData().withTitle("Create audience request").andContents(requestBody);
@@ -96,6 +97,20 @@ public class AudienceManager extends BaseAssertion {
         createAudienceResponse = audienceService.createAudience(requestBody, query, true);
         Serenity.recordReportData().withTitle("Create audience response")
                 .andContents(createAudienceResponse.asString());
+
         assertResponseContains(createAudienceResponse, createAudienceRequest.getName());
+    }
+
+    @Then("Validate created audience exists in Mongo")
+    public void validateCreatedAudienceExistsInMongo() {
+        assertNotNull(createAudienceResponse, "Create audience response is null; create step must run first");
+        String audienceId = createAudienceResponse.jsonPath().getString("data.id");
+        String audienceName = createAudienceResponse.jsonPath().getString("data.name");
+        assertFalse(ObjectUtils.isEmpty(audienceId), "Create audience response missing data.id");
+
+        Document mongoDoc = audienceService.validateCreatedAudienceInMongo(audienceId, audienceName);
+        assertNotNull(mongoDoc, "Audience Mongo document is null");
+        Serenity.recordReportData().withTitle("Audience Mongo document")
+                .andContents(mongoDoc.toJson());
     }
 }
