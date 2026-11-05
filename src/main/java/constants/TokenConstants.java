@@ -14,6 +14,6 @@ public final class TokenConstants {
     public static final String SESSION_ID_KEY = "session_id";
     public static final String HIERARCHY_SEPARATOR = "->";
 
-    /** Serenity session key holding the generated Bearer JWT for API calls. */
+    /** TestSession key holding the generated Bearer JWT for API calls. */
     public static final String AUTH_TOKEN_SESSION_KEY = "clmAuthToken";
 }

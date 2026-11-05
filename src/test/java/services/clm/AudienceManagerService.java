@@ -1,6 +1,7 @@
 package services.clm;
 
 import com.airtel.helper.common.BaseManager;
+import com.airtel.helper.report.ChainTestUtil;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.typesafe.config.Config;
@@ -10,10 +11,10 @@ import io.restassured.http.ContentType;
 import io.restassured.http.Header;
 import io.restassured.response.Response;
 import lombok.extern.slf4j.Slf4j;
-import net.serenitybdd.core.Serenity;
 import org.bson.Document;
 import org.junit.Assert;
 import stepDefinition.api.ApiEndpoints;
+import utilities.TestSession;
 
 import java.util.Arrays;
 import java.util.List;
@@ -25,7 +26,7 @@ public class AudienceManagerService extends BaseManager implements ApiEndpoints 
     private final Config conf = ConfigLoader.load();
 
     private List<Header> authHeaders() {
-        String token = Serenity.sessionVariableCalled(TokenConstants.AUTH_TOKEN_SESSION_KEY);
+        String token = TestSession.get(TokenConstants.AUTH_TOKEN_SESSION_KEY);
         if (token == null || token.isBlank()) {
             throw new IllegalStateException(
                     "JWT auth token not found in session. Run 'Generate JWT auth token for CLM APIs' first.");
@@ -34,15 +35,22 @@ public class AudienceManagerService extends BaseManager implements ApiEndpoints 
     }
 
     public Response getPartnerInfo(boolean checkStatus) {
-        return getResponseWithHeaders(null, authHeaders(), BASE_URL + PARTNER_INFO_ENDPOINT, checkStatus);
+        Response response = getResponseWithHeaders(null, authHeaders(), BASE_URL + PARTNER_INFO_ENDPOINT, checkStatus);
+        ChainTestUtil.log("Partner info status=" + response.statusCode());
+        ChainTestUtil.embedJson(response.asString());
+        return response;
     }
 
     public Response getTagCatalog(boolean checkStatus) {
         Map<String, String> query = Map.of("scope", "AUDIENCE_CATALOG");
-        return getResponseWithHeaders(query, authHeaders(), BASE_URL + TAG_CATALOG_LIST_ENDPOINT, checkStatus);
+        Response response = getResponseWithHeaders(query, authHeaders(), BASE_URL + TAG_CATALOG_LIST_ENDPOINT, checkStatus);
+        ChainTestUtil.log("Tag catalog status=" + response.statusCode());
+        ChainTestUtil.embedJson(response.asString());
+        return response;
     }
 
     public Response createAudience(String body, Map<String, String> queryParams, boolean checkStatus) {
+        ChainTestUtil.embedJson(body);
         Response response = patchResponseWithHeaders(
                 body,
                 authHeaders(),
@@ -50,7 +58,10 @@ public class AudienceManagerService extends BaseManager implements ApiEndpoints 
                 BASE_URL + AUDIENCE_SAVE_ENDPOINT,
                 queryParams,
                 checkStatus);
-        log.info("response: {}", response.getBody().asString());
+        String responseBody = response.getBody().asString();
+        log.info("response: {}", responseBody);
+        ChainTestUtil.log("Create audience status=" + response.statusCode());
+        ChainTestUtil.embedJson(responseBody);
         return response;
     }
 
@@ -70,12 +81,14 @@ public class AudienceManagerService extends BaseManager implements ApiEndpoints 
         MongoCollection<Document> collection = getCollection(client, database, collectionName);
         List<Document> docs = getResultFromMongo(collection, getMongoDBQuery(idField, audienceId));
 
-        log.info("Mongo audience lookup | db={} | collection={} | {}={} | hits={}",
+        String mongoLookupMsg = String.format(
+                "Mongo audience lookup | db=%s | collection=%s | %s=%s | hits=%d",
                 database, collectionName, idField, audienceId, docs.size());
-        Serenity.recordReportData().withTitle("Mongo audience lookup")
-                .andContents("db=" + database + ", collection=" + collectionName
-                        + ", " + idField + "=" + audienceId + ", hits=" + docs.size()
-                        + (docs.isEmpty() ? "" : ", doc=" + docs.get(0).toJson()));
+        log.info(mongoLookupMsg);
+        ChainTestUtil.log(mongoLookupMsg);
+        if (!docs.isEmpty()) {
+            ChainTestUtil.embedJson(docs.get(0).toJson());
+        }
 
         return docs.isEmpty() ? null : docs.get(0);
     }
@@ -99,7 +112,7 @@ public class AudienceManagerService extends BaseManager implements ApiEndpoints 
                     actualName == null ? null : String.valueOf(actualName));
         }
 
-        log.info("Audience validated in Mongo | id={} | name={}", audienceId, audienceDoc.get("name"));
+        ChainTestUtil.log("Audience validated in Mongo | id=%s | name=%s", audienceId, audienceDoc.get("name"));
         return audienceDoc;
     }
 }

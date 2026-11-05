@@ -1,6 +1,10 @@
 package services.common;
 
 import com.airtel.helper.common.BaseManager;
+import com.airtel.helper.exception.ErrorCode;
+import com.airtel.helper.exception.GenericException;
+
+
 import com.typesafe.config.Config;
 import config.ConfigLoader;
 import io.restassured.http.ContentType;
@@ -13,6 +17,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * WireMock LOB service using central framework helpers:
+ * {@link BaseManager}/{@code WiremockHelper}, {@link ReportHelper}, {@link SentinelLogger},
+ * {@link GenericException}.
+ */
 @Slf4j
 public class WireMockService extends BaseManager {
 
@@ -29,7 +38,7 @@ public class WireMockService extends BaseManager {
      *
      * @return stub uuid/id
      */
-    public String createPostPingStub(String responseBodyJson) {
+    public String createPostPingStub(String responseBodyJson) throws GenericException {
         Map<String, Object> responseHeaders = new HashMap<>();
         responseHeaders.put("Content-Type", "application/json");
 
@@ -46,6 +55,14 @@ public class WireMockService extends BaseManager {
                 responseBodyJson,
                 false
         );
+
+        if (stubId == null || stubId.isBlank()) {
+          
+            throw new GenericException(
+                    "Failed to create WireMock POST stub for " + MOCK_POST_PATH,
+                    ErrorCode.GENERIC);
+        }
+
         log.info("Created WireMock POST stub | path={} | stubId={}", MOCK_POST_PATH, stubId);
         return stubId;
     }
@@ -53,18 +70,27 @@ public class WireMockService extends BaseManager {
     /**
      * Hits the mocked POST endpoint on the WireMock server.
      */
-    public Response hitMockedPostPing(String requestBodyJson) {
+    public Response hitMockedPostPing(String requestBodyJson) throws GenericException {
         List<Header> headers = Arrays.asList(new Header("Content-Type", "application/json"));
         String url = wiremockBaseUrl() + MOCK_POST_PATH;
         Response response = postResponseWithHeaders(requestBodyJson, headers, ContentType.JSON, url);
-        log.info("Hit mocked POST | url={} | status={} | body={}",
-                url, response.getStatusCode(), response.asString());
+
+        int status = response.getStatusCode();
+        
+        if (status != 200) {
+            
+            throw new GenericException(
+                    "Mocked POST did not return 200 from " + url + ", status=" + status,
+                    ErrorCode.GENERIC);
+        }
+
+        log.info("Hit mocked POST | url={} | status={} | body={}", url, status, response.asString());
         return response;
     }
 
-    public void deleteStub(String stubId) {
+    public void deleteStub(String stubId) throws GenericException {
         if (stubId == null || stubId.isBlank()) {
-            return;
+            throw new GenericException("Cannot delete WireMock stub: stubId is blank", ErrorCode.GENERIC);
         }
         deleteSpecificStubMapping(wiremockBaseUrl(), stubId);
         log.info("Deleted WireMock stub | stubId={}", stubId);

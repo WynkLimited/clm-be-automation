@@ -1,6 +1,9 @@
 package stepDefinition.api;
 
 import com.airtel.helper.data.JsonParser;
+import com.airtel.helper.report.ChainTestUtil;
+import com.aventstack.chaintest.plugins.ChainTestListener;
+
 import constants.TokenConstants;
 import factory.CreateAudiencePayloadFactory;
 import io.cucumber.java.en.Given;
@@ -12,13 +15,12 @@ import model.response.clm.partner.PartnerInfoItem;
 import model.response.clm.partner.PartnerInfoResponse;
 import model.response.clm.tag.TagCatalogItem;
 import model.response.clm.tag.TagCatalogResponse;
-import net.serenitybdd.annotations.Steps;
-import net.serenitybdd.core.Serenity;
 import org.apache.commons.lang3.ObjectUtils;
 import org.bson.Document;
 import services.clm.AudienceManagerService;
 import utilities.BaseAssertion;
 import utilities.JwtTokenUtil;
+import utilities.TestSession;
 
 import java.util.List;
 import java.util.Map;
@@ -27,9 +29,7 @@ import java.util.stream.Collectors;
 public class AudienceManager extends BaseAssertion {
 
     private final JsonParser jsonParser = new JsonParser();
-
-    @Steps
-    AudienceManagerService audienceService;
+    private final AudienceManagerService audienceService = new AudienceManagerService();
 
     private PartnerInfoResponse partnerInfo;
     private List<String> audienceTags;
@@ -40,16 +40,14 @@ public class AudienceManager extends BaseAssertion {
     public void generateJwtAuthTokenForClmApis() {
         String token = JwtTokenUtil.createToken();
         assertFalse(ObjectUtils.isEmpty(token), "Generated JWT token is null/empty");
-        Serenity.setSessionVariable(TokenConstants.AUTH_TOKEN_SESSION_KEY).to(token);
-        Serenity.recordReportData().withTitle("JWT auth token generated")
-                .andContents("Token created successfully for CLM API calls");
+        TestSession.set(TokenConstants.AUTH_TOKEN_SESSION_KEY, token);
+        ChainTestUtil.log("JWT auth token generated for CLM API calls");
+       
     }
 
     @When("Hit audience manager info API and validate response has partners")
     public void hitAudienceManagerInfoApiAndValidateResponseHasPartners() {
         Response partnerInfoResponse = audienceService.getPartnerInfo(true);
-        Serenity.recordReportData().withTitle("Partner info response")
-                .andContents(partnerInfoResponse.asString());
 
         partnerInfo = jsonParser.convertFromJson(partnerInfoResponse.asString(), PartnerInfoResponse.class);
         assertFalse(ObjectUtils.isEmpty(partnerInfo.getData()), "Partner info data is null/empty");
@@ -59,8 +57,6 @@ public class AudienceManager extends BaseAssertion {
     @When("Hit tag catalog API and fetch audience tags")
     public void hitTagCatalogApiAndFetchAudienceTags() {
         Response tagCatalogResponse = audienceService.getTagCatalog(true);
-        Serenity.recordReportData().withTitle("Tag catalog response")
-                .andContents(tagCatalogResponse.asString());
 
         TagCatalogResponse tagCatalog = jsonParser.convertFromJson(tagCatalogResponse.asString(), TagCatalogResponse.class);
         assertFalse(ObjectUtils.isEmpty(tagCatalog.getData()), "Tag catalog data is null/empty");
@@ -73,8 +69,7 @@ public class AudienceManager extends BaseAssertion {
                 .collect(Collectors.toList());
 
         assertFalse(ObjectUtils.isEmpty(audienceTags), "No valid tags found in tag catalog");
-        Serenity.recordReportData().withTitle("Tags selected for create audience")
-                .andContents(audienceTags.toString());
+        ChainTestUtil.log("Tags selected for create audience: " + audienceTags);
     }
 
     @When("Create audience with partner key {string} and validate audience is created successfully")
@@ -90,13 +85,9 @@ public class AudienceManager extends BaseAssertion {
         String requestBody = jsonParser.convertToJson(createAudienceRequest);
         Map<String, String> query = CreateAudiencePayloadFactory.saveQueryParams();
 
-        Serenity.recordReportData().withTitle("Create audience request").andContents(requestBody);
-        Serenity.recordReportData().withTitle("Partner object id used")
-                .andContents(partnerKey + "=" + sourcePartner.getId());
+        ChainTestUtil.log("Partner object id used: " + partnerKey + "=" + sourcePartner.getId());
 
         createAudienceResponse = audienceService.createAudience(requestBody, query, true);
-        Serenity.recordReportData().withTitle("Create audience response")
-                .andContents(createAudienceResponse.asString());
 
         assertResponseContains(createAudienceResponse, createAudienceRequest.getName());
     }
@@ -110,7 +101,5 @@ public class AudienceManager extends BaseAssertion {
 
         Document mongoDoc = audienceService.validateCreatedAudienceInMongo(audienceId, audienceName);
         assertNotNull(mongoDoc, "Audience Mongo document is null");
-        Serenity.recordReportData().withTitle("Audience Mongo document")
-                .andContents(mongoDoc.toJson());
     }
 }
