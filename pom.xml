@@ -12,20 +12,59 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <serenity.version>4.3.2</serenity.version>
         <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
         <java.version>21</java.version>
-        <cucumber.version>7.11.0</cucumber.version>
+        <!-- Must be one version everywhere; ChainTest otherwise pulls 7.11.1 and breaks cucumber-junit -->
+        <cucumber.version>7.15.0</cucumber.version>
         <maven.build.timestamp.format>yyyy-MM-dd-HH-mm-ss</maven.build.timestamp.format>
-        <api-automation.version>1.0.1</api-automation.version>
+        <backend-automation.version>1.0.0</backend-automation.version>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>releases</id>
+            <name>Nexus Releases</name>
+            <url>http://nexus-bsb.wynk.in/nexus/content/repositories/releases/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.cucumber</groupId>
+                <artifactId>cucumber-bom</artifactId>
+                <version>${cucumber.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
-        <!-- Central backend automation framework (ApiHelper, JsonParser, validators, …) -->
+        <!-- ChainTest Cucumber reporter (HTML under target/chaintest) -->
         <dependency>
-            <groupId>com.airtel.api-automation</groupId>
+            <groupId>com.aventstack</groupId>
+            <artifactId>chaintest-cucumber-jvm</artifactId>
+            <version>1.0.12</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.cucumber</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- Central backend automation framework from Nexus (ApiHelper, validators, …) -->
+        <dependency>
+            <groupId>com.airtel.backend-automation</groupId>
             <artifactId>automation-bundle</artifactId>
-            <version>${api-automation.version}</version>
+            <version>${backend-automation.version}</version>
             <type>pom</type>
         </dependency>
 
@@ -36,16 +75,25 @@
             <version>1.4.3</version>
         </dependency>
 
-        <!-- Serenity Core -->
-        <dependency>
-            <groupId>net.serenity-bdd</groupId>
-            <artifactId>serenity-core</artifactId>
-            <version>${serenity.version}</version>
-        </dependency>
         <dependency>
             <groupId>io.cucumber</groupId>
             <artifactId>cucumber-java</artifactId>
-            <version>7.15.0</version>
+            <version>${cucumber.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-junit</artifactId>
+            <version>${cucumber.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-core</artifactId>
+            <version>${cucumber.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-plugin</artifactId>
+            <version>${cucumber.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -53,25 +101,11 @@
             <version>2.16.1</version>
         </dependency>
 
-        <!-- Serenity Cucumber integration -->
+        <!-- REST Assured (API calls; no Serenity reports) -->
         <dependency>
-            <groupId>net.serenity-bdd</groupId>
-            <artifactId>serenity-cucumber</artifactId>
-            <version>${serenity.version}</version>
-        </dependency>
-
-        <!-- Serenity Screenplay -->
-        <dependency>
-            <groupId>net.serenity-bdd</groupId>
-            <artifactId>serenity-screenplay</artifactId>
-            <version>${serenity.version}</version>
-        </dependency>
-
-        <!-- REST-Assured integration -->
-        <dependency>
-            <groupId>net.serenity-bdd</groupId>
-            <artifactId>serenity-rest-assured</artifactId>
-            <version>${serenity.version}</version>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <version>5.4.0</version>
         </dependency>
 
         <!-- MongoDB driver -->
@@ -170,109 +204,26 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
+                <!-- Force JUnit4: automation-bundle brings TestNG and Surefire would otherwise pick it -->
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-junit47</artifactId>
+                        <version>3.2.5</version>
+                    </dependency>
+                </dependencies>
                 <configuration>
                     <includes>
                         <include>**/runners/*Test*.java</include>
-<!--                        <include>**/runners.RunTests.java</include>-->
                     </includes>
                     <systemPropertyVariables>
-                        <serenity.project.name>Serenity Cucumber Automation</serenity.project.name>
+                        <chaintest.plugins.cucumber.attach-to-step>true</chaintest.plugins.cucumber.attach-to-step>
                     </systemPropertyVariables>
-
-                    <!-- Parallel Execution Configuration -->
                     <parallel>classes</parallel>
                     <threadCount>4</threadCount>
                     <testFailureIgnore>true</testFailureIgnore>
                 </configuration>
             </plugin>
-<!--            <plugin>-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-surefire-plugin</artifactId>-->
-<!--                <version>3.2.5</version>-->
-<!--                <configuration>-->
-<!--                    <parallel>classes</parallel>-->
-<!--                    <threadCount>5</threadCount>-->
-<!--                    <includes>-->
-<!--                        <include>**/*Test.java</include>-->
-<!--                        <include>**/runners.RunTests.java</include>-->
-<!--                    </includes>-->
-<!--                    <systemPropertyVariables>-->
-<!--                        <serenity.project.name>Serenity Cucumber Automation</serenity.project.name>-->
-<!--                    </systemPropertyVariables>-->
-<!--                </configuration>-->
-<!--            </plugin>-->
-<!--            <plugin>-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-surefire-plugin</artifactId>-->
-<!--                <version>3.2.5</version>-->
-<!--                <configuration>-->
-<!--                    <testFailureIgnore>true</testFailureIgnore>-->
-<!--                </configuration>-->
-<!--            </plugin>-->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>3.1.0</version>
-                <executions>
-                    <execution>
-                        <id>create-serenity-dirs</id>
-                        <phase>generate-test-resources</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target>
-                                <mkdir dir="${project.build.directory}/site/serenity"/>
-                                <mkdir dir="${project.basedir}/output/serenity-reports-st"/>
-                            </target>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>net.serenity-bdd.maven.plugins</groupId>
-                <artifactId>serenity-maven-plugin</artifactId>
-                <version>${serenity.version}</version>
-
-                <configuration>
-                    <!-- Read JSON outcomes written by the test run -->
-                    <sourceDirectory>${project.build.directory}/site/serenity</sourceDirectory>
-                    <!-- Stable HTML report folder (no timestamp) -->
-                    <outputDirectory>${project.basedir}/output/serenity-reports-st</outputDirectory>
-                </configuration>
-
-                <executions>
-                    <execution>
-                        <id>serenity-reports</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>aggregate</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-
-            <!-- Allure Maven Plugin to generate and serve Allure reports -->
-            <!--            <plugin>-->
-            <!--                <groupId>io.qameta.allure</groupId>-->
-            <!--                <artifactId>allure-maven</artifactId>-->
-            <!--                <version>2.11.2</version>-->
-            <!--                <executions>-->
-            <!--                    <execution>-->
-            <!--                        <id>allure-report</id>-->
-            <!--                        <phase>post-integration-test</phase>-->
-            <!--                        <goals>-->
-            <!--                            <goal>report</goal>-->
-            <!--                        </goals>-->
-            <!--                    </execution>-->
-            <!--                </executions>-->
-            <!--                <configuration>-->
-            <!--                    <resultsDirectory>${project.build.directory}/allure-results</resultsDirectory>-->
-            <!--                </configuration>-->
-            <!--            </plugin>-->
-
         </plugins>
     </build>
 
